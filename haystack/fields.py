@@ -239,8 +239,14 @@ class LocationField(SearchField):
         if isinstance(value, six.string_types):
             lat, lng = value.split(',')
         elif isinstance(value, (list, tuple)):
-            # GeoJSON-alike
-            lat, lng = value[1], value[0]
+            # WGS-84 format
+            if isinstance(value[0], str) and len(value) == 1:
+                value_string = value[0]
+                lng = value_string[:value_string.find(',')]
+                lat = value_string[value_string.find(',')+1:]
+            else:
+                # GeoJSON-alike
+                lat, lng = value[1], value[0]
         elif isinstance(value, dict):
             lat = value.get('lat', 0)
             lng = value.get('lon', 0)

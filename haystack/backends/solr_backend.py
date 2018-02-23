@@ -153,7 +153,7 @@ class SolrSearchBackend(BaseSearchBackend):
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
                             within=None, dwithin=None, distance_point=None,
-                            models=None, limit_to_registered_models=None,
+                            polygon=None, models=None, limit_to_registered_models=None,
                             result_class=None, stats=None, collate=None,
                             **extra_kwargs):
 
@@ -293,6 +293,12 @@ class SolrSearchBackend(BaseSearchBackend):
             lng, lat = dwithin['point'].get_coords()
             geofilt = '{!geofilt pt=%s,%s sfield=%s d=%s}' % (lat, lng, dwithin['field'], dwithin['distance'].km)
             kwargs['fq'].append(geofilt)
+
+        if polygon is not None:
+            kwargs.setdefault('fq', [])
+            polygon_WKT_string = ', '.join(['{} {}'.format(p[0], p[1]) for p in polygon['polygon'].coords[0]])
+            intersects = '%s:"Intersects(POLYGON((%s)))"' % (polygon['field'], polygon_WKT_string)
+            kwargs['fq'].append(intersects)
 
         # Check to see if the backend should try to include distances
         # (Solr 4.X+) in the results.
@@ -780,6 +786,9 @@ class SolrSearchQuery(BaseSearchQuery):
 
         if self.within:
             search_kwargs['within'] = self.within
+
+        if self.polygon:
+            search_kwargs['polygon'] = self.polygon
 
         if spelling_query:
             search_kwargs['spelling_query'] = spelling_query
